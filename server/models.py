@@ -1,5 +1,7 @@
 from database import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
@@ -8,26 +10,17 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String)
+    
+    pdfs = relationship("PdfFile", back_populates="owner")
 
-class pdfFile(Base):
+class PdfFile(Base):
     __tablename__ = "pdf_files"
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String, index=True)
-    filepath = Column(String, unique=True, index=True)
-    upload_time = Column(String)
-    username = Column(String, index=True)
+    filepath = Column(String, unique=True)
+    upload_time = Column(DateTime, default=datetime.utcnow)
+    completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     
-class ProgressEntry(Base):
-    __tablename__ = "progress_entries"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True)
-    date = Column(String, index=True)
-    progress_details = Column(String)
-class Task(Base):
-    __tablename__ = "tasks"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True)
-    title = Column(String, index=True)
-    description = Column(String)
-    due_date = Column(String)
-    status = Column(String, index=True)  # e.g., pending, completed
+    owner = relationship("User", back_populates="pdfs")
