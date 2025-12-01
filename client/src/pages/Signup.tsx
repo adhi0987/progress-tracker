@@ -6,7 +6,7 @@ import './Signup.css';
 export default function Signup() {
   const [formData, setFormData] = useState({ name: '', email: '', username: '', password: '' });
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

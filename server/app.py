@@ -18,7 +18,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Progress Tracker API")
 
 # CORS
-origins = ["http://localhost:5173"] # Vite default port
+origins = ["http://localhost:5173","*"] # Vite default port
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
