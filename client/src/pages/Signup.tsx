@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
 import api from '../api';
 import './Signup.css';
 
 export default function Signup() {
   const [formData, setFormData] = useState({ name: '', email: '', username: '', password: '' });
   const [error, setError] = useState('');
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,7 +17,8 @@ export default function Signup() {
     try {
       const response = await api.post('/signup', formData);
       localStorage.setItem('token', response.data.access_token);
-      window.location.href = '/dashboard';
+      // window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (err: any) {
       if(err.response?.status === 400) {
         setError("Username already exists");

@@ -3,11 +3,14 @@ import ClockTimer from '../components/ClockTimer';
 import PDFManager from '../components/PDFManager';
 import ProgressStats from '../components/ProgressStats';
 import './Dashboard.css';
+import{ useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    // window.location.href = '/login';
+    navigate('/login');
   };
 
   return (
