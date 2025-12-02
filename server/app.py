@@ -18,7 +18,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Progress Tracker API")
 
 # CORS
-origins = ["http://localhost:5173","*"] # Vite default port
+origins = ["http://localhost:5173","https://progress-tracker-user-interface.onrender.com"] # Vite default port
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -126,3 +126,59 @@ def toggle_pdf_completion(
     db.commit()
     db.refresh(pdf)
     return pdf
+
+@app.delete("/pdfs/{pdf_id}", status_code=204)
+def delete_pdf(
+    pdf_id: int, 
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    pdf = db.query(models.PdfFile).filter(models.PdfFile.id == pdf_id, models.PdfFile.user_id == current_user.id).first()
+    if not pdf:
+        raise HTTPException(status_code=404, detail="PDF not found")
+    
+    # Delete the file from the filesystem
+    if os.path.exists(pdf.filepath):
+        os.remove(pdf.filepath)
+    
+    db.delete(pdf)
+    db.commit()
+    return  
+
+@app.get("/progress", response_model=schemas.ProgressResponse) 
+def get_progress(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    total_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id).count()
+    completed_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id, models.PdfFile.completed == True).count()
+    
+    progress_percentage = (completed_pdfs / total_pdfs * 100) if total_pdfs > 0 else 0.0
+    
+    return schemas.ProgressResponse(
+        total_pdfs=total_pdfs,
+        completed_pdfs=completed_pdfs,
+        progress_percentage=progress_percentage
+    )   
+@app.get("/completed_pdfs_in_particular_day/{completed_at}", response_model=List[schemas.PdfFileBase])
+def get_completed_pdfs_in_particular_day(
+    completed_at: str,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        date_obj = auth.datetime.strptime(completed_at, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+    
+    start_datetime = auth.datetime.combine(date_obj, auth.datetime.min.time())
+    end_datetime = auth.datetime.combine(date_obj, auth.datetime.max.time())
+    
+    completed_pdfs = db.query(models.PdfFile).filter(
+        models.PdfFile.user_id == current_user.id,
+        models.PdfFile.completed == True,
+        models.PdfFile.completed_at >= start_datetime,
+        models.PdfFile.completed_at <= end_datetime
+    ).all()
+    
+    return completed_pdfs   

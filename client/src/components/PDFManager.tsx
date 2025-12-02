@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FileText, Upload, CheckSquare, Square, Eye } from 'lucide-react';
+import { FileText, Upload, CheckSquare, Square, Eye, Trash } from 'lucide-react';
 import api from '../api';
 import './PDFManager.css';
 
+const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8000';
 interface PDFFile {
     id: number;
     filename: string;
@@ -52,9 +53,19 @@ export default function PDFManager() {
     };
 
     const viewPdf = (filename: string) => {
-        window.open(`http://127.0.0.1:8000/uploads/${filename}`, '_blank');
+        const pdf_url =BASE_URL + `/uploads/${filename}`; 
+        window.open(pdf_url, '_blank');
     };
 
+    const deletePdf = async (id: number) => {
+        try {
+            await api.delete(`/pdfs/${id}`);
+            fetchPdfs();
+        } catch (err) {
+            console.error("Failed to delete PDF");
+        }
+    };
+    
     return (
         <div className="pdf-manager">
             <div className="pdf-header">
@@ -80,6 +91,9 @@ export default function PDFManager() {
                             </button>
                             <button onClick={() => toggleComplete(pdf.id)} title="Mark Complete">
                                 {pdf.completed ? <CheckSquare color="#4ade80" /> : <Square />}
+                            </button>
+                            <button onClick={() => deletePdf(pdf.id)} title="Delete">
+                                <Trash size={18} />
                             </button>
                         </div>
                     </div>
