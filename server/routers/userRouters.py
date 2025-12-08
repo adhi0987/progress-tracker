@@ -6,8 +6,9 @@ from server.auth import auth
 from fastapi import Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
-
-
+import os
+import shutil
+from server.app import get_current_user
 @app.post("/signup", response_model=schemas.Token)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
