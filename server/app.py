@@ -7,10 +7,10 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 
-from database import engine, get_db, Base
-import models
-import schemas
-import auth
+from server.database.database import engine, get_db, Base
+import server.models.models as models
+import server.models.schemas as schemas
+import server.auth.auth as auth
 
 # Create Tables
 Base.metadata.create_all(bind=engine)
