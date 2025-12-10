@@ -1,9 +1,86 @@
-print("hello from services.py")
-def example_service_function():
-    return "This is an example service function."
-def another_service_function():
-    return "This is another service function."
-def yet_another_service_function():
-    return "This is yet another service function."
-def final_service_function():
-    return "This is the final service function."
+from sqlalchemy.orm import Session
+from fastapi import HTTPException,status, UploadFile
+import os
+import shutil
+from datetime import datetime
+
+import server.models.models as models
+import server.schemas.schemas as schemas
+import  server.auth.auth  as auth 
+
+
+class UserService:
+    @staticmethod
+    def create_user(db:Session, user:schemas.SignupRequestModel):
+        #check if user already exists
+        db_user = db.query(models.User).filter(models.User.username == user.username).first()
+        if db_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
+        hashed_password = auth.get_password_hash(user.password)
+        new_user = models.User(
+            username=user.username,
+            email=user.email,
+            name=user.name,
+            password_hash=hashed_password
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    @staticmethod
+    def authenticate_user(db:Session,user:schemas.LoginRequestModel):
+        db_user = db.query(models.User).filter(models.User.username == user.username).first()
+        if not db_user or not auth.verify_password(user.password, db_user.password_hash):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+        return db_user
+    @staticmethod
+    def get_user_by_username(db:Session,username:str):
+        return db.query(models.User).filter(models.User.username == username).first()
+class PdfService:
+    @staticmethod
+    def save_pdf(db:Session,file:UploadFile,user_id:int):
+        file_location = f"uploads/{file.filename}"
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        new_pdf = models.PdfFile(
+            filename=file.filename,
+            filepath=file_location,
+            user_id=user_id
+        )
+        db.add(new_pdf)
+        db.commit()
+        db.refresh(new_pdf)
+        return new_pdf
+    @staticmethod
+    def get_all_pdfs(db:Session,user_id:int):
+        return db.query(models.PdfFile).filter(models.PdfFile.user_id == user_id).all()
+    @staticmethod
+    def mark_pdf_completed(db:Session,pdf_id:int,user_id:int):
+        pdf = db.query(models.PdfFile).filter(models.PdfFile.id == pdf_id,models.PdfFile.user_id == user_id).first()
+        if not pdf:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF not found")
+        pdf.completed = not pdf.completed
+        if pdf.completed:
+            pdf.completed_at = auth.datetime.utcnow()
+        else:
+            pdf.completed_at = None
+        db.commit()
+        db.refresh(pdf)
+        return pdf
+    @staticmethod
+    def delete_pdf(db:Session,pdf_id:int,user_id:int):
+        pdf = db.query(models.PdfFile).filter(models.PdfFile.id == pdf_id,models.PdfFile.user_id == user_id).first()
+        if not pdf:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PDF not found")
+        db.delete(pdf)
+        db.commit()
+        # Optionally, delete the file from the filesystem
+        if os.path.exists(pdf.filepath):
+            os.remove(pdf.filepath)
+        return
+    @staticmethod
+    def get_progress(db:Session,user_id:int):
+        total_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == user_id).count()
+        completed_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == user_id, models.PdfFile.completed == True).count()
+        progress_percentage = (completed_pdfs / total_pdfs * 100) if total_pdfs > 0 else 0.0
+        return total_pdfs, completed_pdfs, progress_percentage

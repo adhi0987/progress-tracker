@@ -21,7 +21,8 @@ export default function PDFManager() {
     const fetchPdfs = async () => {
         try {
             const res = await api.get('/pdfs');
-            setPdfs(res.data);
+            localStorage.setItem('token', res.data.access_token);
+            setPdfs(res.data.PdfList);
         } catch (err) {
             console.error(err);
         }
@@ -34,7 +35,8 @@ export default function PDFManager() {
         formData.append('file', e.target.files[0]);
 
         try {
-            await api.post('/upload_pdf', formData);
+            const response = await api.post('/upload_pdf', formData);
+            localStorage.setItem('token', response.data.access_token);
             fetchPdfs();
         } catch (err) {
             console.error("Upload failed");
@@ -45,7 +47,8 @@ export default function PDFManager() {
 
     const toggleComplete = async (id: number) => {
         try {
-            await api.put(`/pdfs/${id}/toggle`);
+            const response = await api.put(`/pdfs/${id}/toggle`);
+            localStorage.setItem('token', response.data.access_token);  
             fetchPdfs();
         } catch (err) {
             console.error("Failed to update status");

@@ -15,8 +15,9 @@ export default function ProgressStats() {
                 // const res = await api.get('/pdfs');
                 // const pdfs = res.data;
                 const res = await api.get('/progress');
-                // const total_pdfs = res.data.total_pdfs;
-                // const completed_pdfs = res.data.completed_pdfs;
+                localStorage.setItem('token', res.data.access_token);
+                const total_pdfs = res.data.total_pdfs;
+                const completed_pdfs = res.data.completed_pdfs;
                 const progress_percentage = res.data.progress_percentage;
                 
                 setOverall(progress_percentage);    
