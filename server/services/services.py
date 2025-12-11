@@ -84,3 +84,14 @@ class PdfService:
         completed_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == user_id, models.PdfFile.completed == True).count()
         progress_percentage = (completed_pdfs / total_pdfs * 100) if total_pdfs > 0 else 0.0
         return total_pdfs, completed_pdfs, progress_percentage
+    @staticmethod
+    def get_completed_pdfs_in_particular_day(db:Session,user_id:int,day:datetime):
+        start_of_day = datetime(day.year, day.month, day.day)
+        end_of_day = datetime(day.year, day.month, day.day, 23, 59, 59)
+        count = db.query(models.PdfFile).filter(
+            models.PdfFile.user_id == user_id,
+            models.PdfFile.completed == True,
+            models.PdfFile.completed_at >= start_of_day,
+            models.PdfFile.completed_at <= end_of_day
+        ).count()
+        return count

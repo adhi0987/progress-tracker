@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../api';
 import './ProgressStats.css';
+import { data } from 'react-router-dom';
 
 export default function ProgressStats() {
     const [stats, setStats] = useState<any[]>([]);
     const [overall, setOverall] = useState(0);
+    const[totalPdfs,setTotalPdfs]=useState(0);
+    const[completedPdfs,setCompletedPdfs]=useState(0);
 
     useEffect(() => {
-        // Since we don't have a dedicated stats endpoint in this simple version, 
-        // we'll calculate it from the PDF list on the client side.
         const fetchStats = async () => {
             try {
-                // const res = await api.get('/pdfs');
-                // const pdfs = res.data;
                 const res = await api.get('/progress');
                 localStorage.setItem('token', res.data.access_token);
                 const total_pdfs = res.data.total_pdfs;
@@ -21,33 +20,21 @@ export default function ProgressStats() {
                 const progress_percentage = res.data.progress_percentage;
                 
                 setOverall(progress_percentage);    
-
-                // Calculate Overall
-                // const completed = pdfs.filter((p:any) => p.completed).length;
-                // const total = pdfs.length;
-                // setOverall(total === 0 ? 0 : Math.round((completed/total) * 100));
-
-                // Calculate Day-wise stats (Mock logic for demo: Group by dummy days)
+                setCompletedPdfs(completed_pdfs);
+                setTotalPdfs(total_pdfs);
+                
                 // In a real app, use the `completed_at` timestamp
-                const currentFullDate = new Date();
-                const currentDay = new Date().getDay(); // 0 (Sun) to 6 (Sat)
-                let currentDayName = '';
-                switch(currentDay) {    
-                    case 0: currentDayName = 'Sun'; break;
-                    case 1: currentDayName = 'Mon'; break;
-                    case 2: currentDayName = 'Tue'; break;
-                    case 3: currentDayName = 'Wed'; break;
-                    case 4: currentDayName = 'Thu'; break;
-                    case 5: currentDayName = 'Fri'; break;
-                    case 6: currentDayName = 'Sat'; break;
-                }
                 const statDataTillLastWeek = [];
-                for(let i = 1; i <= 7; i++) {
-                    const date = new Date();
-                    date.setDate(currentFullDate.getDate() - i);
-                    const day = date.getDay();
+                for(let i = 7; i >= 1; i--) {
+                    // const CompletedDate = new Date().toISOString().split('T')[0];
+                    // date.setDate(new Date().getDate() - i);
+                    // const day = date.getDay();
+                    const dataObj = new Date();
+                    dataObj.setDate(dataObj.getDate() - i);
+                    const dateString = dataObj.toISOString().split('T')[0];
+                    const dayIndex = dataObj.getDay();
                     let dayName = '';
-                    switch(day) {
+                    switch(dayIndex) {
                         case 0: dayName = 'Sun'; break;
                         case 1: dayName = 'Mon'; break;
                         case 2: dayName = 'Tue'; break;
@@ -56,27 +43,83 @@ export default function ProgressStats() {
                         case 5: dayName = 'Fri'; break;
                         case 6: dayName = 'Sat'; break;
                     }
-                    const statDataForDay  = await api.get("/completed_pdf_in_particular_day/"+date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate());
-                    statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.count });
-                }
-                const completed = statDataTillLastWeek.find(s => s.day === currentDayName)?.tasks || 0;
+                    try
+                    {
 
-                const statData  = await api.get("/completed_pdf_in_particular_day/"+currentFullDate.getFullYear()+"-"+(currentFullDate.getMonth()+1)+"-"+currentFullDate.getDate());
+                        const response = await api.get(`/completed_pdfs_in_particular_day/${dateString}`);
+                        localStorage.setItem('token', response.data.access_token);
+                        statDataTillLastWeek.push({ 
+                            day: dayName, 
+                            tasks: response.data.NumberofCompletedPdfs 
+                        });
+                    }
+                    catch(error)
+                    {
+                        console.error('Error fetching completed PDFs for day:', error);
+                        statDataTillLastWeek.push({
+                            day: dayName,
+                            tasks: 0
+                        });
+                    }
+                    // statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.NumberofCompletedPdfs });
+                    // statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.NumberofCompletedPdfs });
+                }
+
+                // try
+                // {
+                //     const response = await api.get(`/completed_pdfs_in_particular_day/${currentFullDate}`);
+                //     localStorage.setItem('token', response.data.access_token);
+                // }
+                // catch(error)
+                // {
+                //     console.error('Error fetching completed PDFs for today:', error);
+                // }
+                // let currentDayName = '';
+                // switch(currentDay) {    
+                //     case 0: currentDayName = 'Sun'; break;
+                //     case 1: currentDayName = 'Mon'; break;
+                //     case 2: currentDayName = 'Tue'; break;
+                //     case 3: currentDayName = 'Wed'; break;
+                //     case 4: currentDayName = 'Thu'; break;
+                //     case 5: currentDayName = 'Fri'; break;
+                //     case 6: currentDayName = 'Sat'; break;
+                // }
+                // const statDataTillLastWeek = [];
+                // for(let i = 1; i <= 7; i++) {
+                //     const date = new Date();
+                //     date.setDate(currentFullDate.getDate() - i);
+                //     const day = date.getDay();
+                //     let dayName = '';
+                //     switch(day) {
+                //         case 0: dayName = 'Sun'; break;
+                //         case 1: dayName = 'Mon'; break;
+                //         case 2: dayName = 'Tue'; break;
+                //         case 3: dayName = 'Wed'; break;
+                //         case 4: dayName = 'Thu'; break;
+                //         case 5: dayName = 'Fri'; break;
+                //         case 6: dayName = 'Sat'; break;
+                //     }
+                //     const statDataForDay  = await api.get("/completed_pdf_in_particular_day/"+date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate());
+                //     statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.count });
+                // }
+                // const completed = statDataTillLastWeek.find(s => s.day === currentDayName)?.tasks || 0;
+
+                // const statData  = await api.get("/completed_pdf_in_particular_day/"+currentFullDate.getFullYear()+"-"+(currentFullDate.getMonth()+1)+"-"+currentFullDate.getDate());
 
                 
-                setStats([...statDataTillLastWeek.reverse(), { day: currentDayName, tasks: statData.data.count + completed }]);
+                setStats([...statDataTillLastWeek.reverse()]);
             } catch(e) { console.error(e); }
         };
         fetchStats();
-    }, []);
+    }, [totalPdfs,completedPdfs,overall]);
 
     return (
         <div className="progress-stats">
             <div className="statistics">
                 <h3>Total PDFS</h3>
-                <span>{stats.reduce((acc, curr) => acc + curr.tasks, 0)}</span>
-                <h3>Uncompleted PDFs </h3>
-                <span>{stats.reduce((acc, curr) => acc + curr.tasks, 0) - Math.round((overall / 100) * stats.reduce((acc, curr) => acc + curr.tasks, 0))}</span>
+                <span>{totalPdfs}</span>
+                <h3>Completed PDFs </h3>
+                <span>{completedPdfs}</span>
             </div>
             <div className="overall-progress">
                 <h3>Overall Completion</h3>

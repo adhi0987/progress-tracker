@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,status
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime
 import shutil
 import os
 
@@ -65,7 +66,7 @@ def get_pdfs(current_user: models.User = Depends(get_current_user), db: Session 
     access_token = auth.create_access_token(data={"sub": current_user.username})
     return {
         "PdfList": pdfs,
-        "acess_token": access_token,
+        "access_token": access_token,
         "token_type": "bearer"
     }
 
@@ -76,19 +77,6 @@ def toggle_pdf_completion(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # pdf = db.query(models.PdfFile).filter(models.PdfFile.id == pdf_id, models.PdfFile.user_id == current_user.id).first()
-    # if not pdf:
-    #     raise HTTPException(status_code=404, detail="PDF not found")
-    
-    # pdf.completed = not pdf.completed
-    # if pdf.completed:
-    #     pdf.completed_at = auth.datetime.utcnow()
-    # else:
-    #     pdf.completed_at = None
-        
-    # db.commit()
-    # db.refresh(pdf)
-    # return pdf
     pdf = PdfService.mark_pdf_completed(db, pdf_id, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
     return {
@@ -104,18 +92,7 @@ def delete_pdf(
     pdf_id: int, 
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
-):
-    # pdf = db.query(models.PdfFile).filter(models.PdfFile.id == pdf_id, models.PdfFile.user_id == current_user.id).first()
-    # if not pdf:
-    #     raise HTTPException(status_code=404, detail="PDF not found")
-    
-    # # Delete the file from the filesystem
-    # if os.path.exists(pdf.filepath):
-    #     os.remove(pdf.filepath)
-    
-    # db.delete(pdf)
-    # db.commit()
-    # return  
+): 
     PdfService.delete_pdf(db, pdf_id, current_user.id)    
     return
 
@@ -124,46 +101,28 @@ def get_progress(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # total_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id).count()
-    # completed_pdfs = db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id, models.PdfFile.completed == True).count()
-    
-    # # progress_percentage = (completed_pdfs / total_pdfs * 100) if total_pdfs > 0 else 0.0
-    
-    # return schemas.ProgressResponse(
-    #     total_pdfs=total_pdfs,
-    #     completed_pdfs=completed_pdfs,
-    #     progress_percentage=progress_percentage
-    # ) 
-    progress_data = PdfService.get_progress(db, current_user.id)
+    total_pdfs,completed_pdfs,progress_percentage = PdfService.get_progress(db, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
     return {
-        "total_pdfs": progress_data["total_pdfs"],
-        "completed_pdfs": progress_data["completed_pdfs"],
-        "progress_percentage": progress_data["progress_percentage"],
-        "acess_token": access_token,
+        "total_pdfs": total_pdfs,
+        "completed_pdfs": completed_pdfs,
+        "progress_percentage": progress_percentage,
+        "access_token": access_token,
         "token_type": "bearer"
     }  
 
 
-@router.get("/completed_pdfs_in_particular_day/{completed_at}", response_model=schemas.pdfResponseModel)
+@router.get("/completed_pdfs_in_particular_day/{completed_at}", response_model=schemas.CompletedPdfsInParticularDayResponseModel)
 def get_completed_pdfs_in_particular_day(
-    completed_at: str,
+    completed_at: datetime,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    try:
-        date_obj = auth.datetime.strptime(completed_at, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
-    
-    start_datetime = auth.datetime.combine(date_obj, auth.datetime.min.time())
-    end_datetime = auth.datetime.combine(date_obj, auth.datetime.max.time())
-    
-    completed_pdfs = db.query(models.PdfFile).filter(
-        models.PdfFile.user_id == current_user.id,
-        models.PdfFile.completed == True,
-        models.PdfFile.completed_at >= start_datetime,
-        models.PdfFile.completed_at <= end_datetime
-    ).all()
-    
-    return completed_pdfs   
+    number_of_completed_pdfs = PdfService.get_completed_pdfs_in_particular_day(db, current_user.id, completed_at)
+    access_token = auth.create_access_token(data={"sub": current_user.username})
+    return {
+        "NumberofCompletedPdfs": number_of_completed_pdfs,
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+       

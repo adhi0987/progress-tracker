@@ -27,10 +27,17 @@ class uploadPdfResponseModel(BaseModel):
     completed: bool
     access_token: str
     token_type: str  
+class PdfItemModel(BaseModel):
+    id: int
+    filename: str
+    upload_time: datetime
+    completed: bool
 
+    class Config:
+        from_attributes = True
 class pdfResponseModel(BaseModel):
-    PdfList : list
-    acess_token: str
+    PdfList : list[PdfItemModel]
+    access_token: str
     token_type: str
 
 class togglePdfResponseModel(BaseModel):
@@ -44,7 +51,11 @@ class ProgressResponseModel(BaseModel):
     total_pdfs: int
     completed_pdfs: int
     progress_percentage: float
-    acess_token: str
+    access_token: str
+    token_type: str
+class CompletedPdfsInParticularDayResponseModel(BaseModel):
+    NumberofCompletedPdfs: int
+    access_token: str
     token_type: str
 # #
 # class UserBase(BaseModel):
