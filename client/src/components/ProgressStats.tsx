@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import api from '../api';
 import './ProgressStats.css';
-import { data } from 'react-router-dom';
 
 export default function ProgressStats() {
     const [stats, setStats] = useState<any[]>([]);
