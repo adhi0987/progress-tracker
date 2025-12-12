@@ -6,137 +6,96 @@ import './ProgressStats.css';
 export default function ProgressStats() {
     const [stats, setStats] = useState<any[]>([]);
     const [overall, setOverall] = useState(0);
-    const[totalPdfs,setTotalPdfs]=useState(0);
-    const[completedPdfs,setCompletedPdfs]=useState(0);
+    const [totalPdfs, setTotalPdfs] = useState(0);
+    const [completedPdfs, setCompletedPdfs] = useState(0);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
+                // 1. Fetch Overall Stats
                 const res = await api.get('/progress');
+                // Note: The backend rotates tokens, so saving it is fine, 
+                // but ensure this doesn't cause race conditions in other components.
                 localStorage.setItem('token', res.data.access_token);
-                const total_pdfs = res.data.total_pdfs;
-                const completed_pdfs = res.data.completed_pdfs;
-                const progress_percentage = res.data.progress_percentage;
                 
-                setOverall(progress_percentage);    
-                setCompletedPdfs(completed_pdfs);
-                setTotalPdfs(total_pdfs);
+                setOverall(res.data.progress_percentage);    
+                setCompletedPdfs(res.data.completed_pdfs);
+                setTotalPdfs(res.data.total_pdfs);
                 
-                // In a real app, use the `completed_at` timestamp
-                const statDataTillLastWeek = [];
-                for(let i = 7; i >= 1; i--) {
-                    // const CompletedDate = new Date().toISOString().split('T')[0];
-                    // date.setDate(new Date().getDate() - i);
-                    // const day = date.getDay();
+                // 2. Prepare dates for the last 7 days
+                const datePromises = [];
+                // Loop to generate dates (e.g., T-7 to T-1)
+                // If you want to include "Today", start i at 0.
+                for(let i = 6; i >= 0; i--) {
                     const dataObj = new Date();
                     dataObj.setDate(dataObj.getDate() - i);
+                    
                     const dateString = dataObj.toISOString().split('T')[0];
                     const dayIndex = dataObj.getDay();
-                    let dayName = '';
-                    switch(dayIndex) {
-                        case 0: dayName = 'Sun'; break;
-                        case 1: dayName = 'Mon'; break;
-                        case 2: dayName = 'Tue'; break;
-                        case 3: dayName = 'Wed'; break;
-                        case 4: dayName = 'Thu'; break;
-                        case 5: dayName = 'Fri'; break;
-                        case 6: dayName = 'Sat'; break;
-                    }
-                    try
-                    {
+                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const dayName = dayNames[dayIndex];
 
-                        const response = await api.get(`/completed_pdfs_in_particular_day/${dateString}`);
-                        localStorage.setItem('token', response.data.access_token);
-                        statDataTillLastWeek.push({ 
-                            day: dayName, 
-                            tasks: response.data.NumberofCompletedPdfs 
-                        });
-                    }
-                    catch(error)
-                    {
-                        console.error('Error fetching completed PDFs for day:', error);
-                        statDataTillLastWeek.push({
-                            day: dayName,
-                            tasks: 0
-                        });
-                    }
-                    // statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.NumberofCompletedPdfs });
-                    // statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.NumberofCompletedPdfs });
+                    // Create a promise for each request
+                    datePromises.push(
+                        api.get(`/completed_pdfs_in_particular_day/${dateString}`)
+                           .then(response => ({
+                               day: dayName,
+                               tasks: response.data.NumberofCompletedPdfs
+                           }))
+                           .catch(err => {
+                               console.error(`Error fetching for ${dateString}`, err);
+                               return { day: dayName, tasks: 0 };
+                           })
+                    );
                 }
 
-                // try
-                // {
-                //     const response = await api.get(`/completed_pdfs_in_particular_day/${currentFullDate}`);
-                //     localStorage.setItem('token', response.data.access_token);
-                // }
-                // catch(error)
-                // {
-                //     console.error('Error fetching completed PDFs for today:', error);
-                // }
-                // let currentDayName = '';
-                // switch(currentDay) {    
-                //     case 0: currentDayName = 'Sun'; break;
-                //     case 1: currentDayName = 'Mon'; break;
-                //     case 2: currentDayName = 'Tue'; break;
-                //     case 3: currentDayName = 'Wed'; break;
-                //     case 4: currentDayName = 'Thu'; break;
-                //     case 5: currentDayName = 'Fri'; break;
-                //     case 6: currentDayName = 'Sat'; break;
-                // }
-                // const statDataTillLastWeek = [];
-                // for(let i = 1; i <= 7; i++) {
-                //     const date = new Date();
-                //     date.setDate(currentFullDate.getDate() - i);
-                //     const day = date.getDay();
-                //     let dayName = '';
-                //     switch(day) {
-                //         case 0: dayName = 'Sun'; break;
-                //         case 1: dayName = 'Mon'; break;
-                //         case 2: dayName = 'Tue'; break;
-                //         case 3: dayName = 'Wed'; break;
-                //         case 4: dayName = 'Thu'; break;
-                //         case 5: dayName = 'Fri'; break;
-                //         case 6: dayName = 'Sat'; break;
-                //     }
-                //     const statDataForDay  = await api.get("/completed_pdf_in_particular_day/"+date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate());
-                //     statDataTillLastWeek.push({ day: dayName, tasks: statDataForDay.data.count });
-                // }
-                // const completed = statDataTillLastWeek.find(s => s.day === currentDayName)?.tasks || 0;
-
-                // const statData  = await api.get("/completed_pdf_in_particular_day/"+currentFullDate.getFullYear()+"-"+(currentFullDate.getMonth()+1)+"-"+currentFullDate.getDate());
-
+                // 3. Run all requests in parallel
+                const results = await Promise.all(datePromises);
                 
-                setStats([...statDataTillLastWeek.reverse()]);
-            } catch(e) { console.error(e); }
+                // 4. Update state (No .reverse() needed if we want Oldest -> Newest)
+                setStats(results);
+
+            } catch(e) { 
+                console.error(e); 
+            }
         };
+
         fetchStats();
-    }, [totalPdfs,completedPdfs,overall]);
+        // dependency array is empty to run only once on mount
+    }, []); 
 
     return (
         <div className="progress-stats">
             <div className="statistics">
-                <h3>Total PDFS</h3>
-                <span>{totalPdfs}</span>
-                <h3>Completed PDFs </h3>
-                <span>{completedPdfs}</span>
+                <div className="stat-item">
+                    <h3>Total PDFs</h3>
+                    <span>{totalPdfs}</span>
+                </div>
+                <div className="stat-item">
+                    <h3>Completed</h3>
+                    <span>{completedPdfs}</span>
+                </div>
             </div>
             <div className="overall-progress">
                 <h3>Overall Completion</h3>
                 <div className="progress-bar-container">
                     <div className="progress-bar-fill" style={{ width: `${overall}%` }}></div>
                 </div>
-                <span>{overall}%</span>
+                <span>{overall.toFixed(1)}%</span>
             </div>
             
             <div className="chart-container">
-                <h3>Daily Activity</h3>
+                <h3>Daily Activity (Last 7 Days)</h3>
                 <div style={{ width: '100%', height: 200 }}>
                     <ResponsiveContainer>
                         <BarChart data={stats}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                             <XAxis dataKey="day" stroke="#888" />
-                            <YAxis stroke="#888" />
-                            <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
+                            <YAxis stroke="#888" allowDecimals={false} />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: '#333', border: 'none', color: '#fff' }} 
+                                cursor={{fill: 'rgba(255,255,255,0.1)'}}
+                            />
                             <Bar dataKey="tasks" fill="#646cff" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>

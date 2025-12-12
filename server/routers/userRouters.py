@@ -10,7 +10,9 @@ from server.models import models
 from server.schemas import schemas
 from server.auth import auth
 from server.dependencies.dependencies import get_current_user
-from server.services.services import UserService ,PdfService
+# from server.services.services import UserService ,PdfService
+from server.services.UserServices import UserService 
+from server.services.PdfService import PdfService
 
 #create Router
 router = APIRouter()
