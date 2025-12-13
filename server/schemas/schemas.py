@@ -57,33 +57,3 @@ class CompletedPdfsInParticularDayResponseModel(BaseModel):
     NumberofCompletedPdfs: int
     access_token: str
     token_type: str
-# #
-# class UserBase(BaseModel):
-#     username: str
-#     email: str
-#     name: str
-
-# class UserCreate(UserBase):
-#     password: str
-
-# class UserLogin(BaseModel):
-#     username: str
-#     password: str
-
-# class Token(BaseModel):
-#     access_token: str
-#     token_type: str
-
-# class PdfFileBase(BaseModel):
-#     id: int
-#     filename: str
-#     completed: bool
-#     upload_time: datetime
-
-#     class Config:
-#         from_attributes = True
-
-# class ProgressResponse(BaseModel):
-#     total_pdfs: int
-#     completed_pdfs: int
-#     progress_percentage: float
