@@ -2,15 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,status
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
-import shutil
-import os
-
 from server.database.database import get_db
 from server.models import models
 from server.schemas import schemas
 from server.auth import auth
 from server.dependencies.dependencies import get_current_user
-# from server.services.services import UserService ,PdfService
 from server.services.UserServices import UserService 
 from server.services.PdfService import PdfService
 
@@ -22,13 +18,19 @@ router = APIRouter()
 def signup(user: schemas.SignupRequestModel, db: Session = Depends(get_db)):
     new_user = UserService.create_user(db, user)
     access_token = auth.create_access_token(data={"sub": new_user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return schemas.SignupResponseModel(
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 @router.post("/login", response_model=schemas.LoginResponseModel)
 def login(userLoginData: schemas.LoginRequestModel, db: Session = Depends(get_db)):
     user = UserService.authenticate_user(db, userLoginData)
     access_token = auth.create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return schemas.LoginResponseModel(
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 @router.post("/upload_pdf", response_model=schemas.uploadPdfResponseModel)
 async def upload_pdf(
@@ -38,39 +40,25 @@ async def upload_pdf(
 ):
     new_pdf = PdfService.save_pdf(db, file, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
-    return {
-        "id": new_pdf.id,
-        "filename": new_pdf.filename,
-        "upload_time": new_pdf.upload_time,
-        "completed": False,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
-
-    # file_location = f"uploads/{file.filename}"
-    # with open(file_location, "wb") as buffer:
-    #     shutil.copyfileobj(file.file, buffer)
-        
-    # new_pdf = models.PdfFile(
-    #     filename=file.filename,
-    #     filepath=file_location,
-    #     user_id=current_user.id
-    # )
-    # db.add(new_pdf)
-    # db.commit()
-    # db.refresh(new_pdf)
-    # return new_pdf
+    return schemas.uploadPdfResponseModel(
+        id=new_pdf.id,
+        filename=new_pdf.filename,
+        upload_time=new_pdf.upload_time,
+        completed=False,
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 @router.get("/pdfs", response_model=schemas.pdfResponseModel)
 def get_pdfs(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     # return db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id).all()
     pdfs = PdfService.get_all_pdfs(db, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
-    return {
-        "PdfList": pdfs,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return schemas.pdfResponseModel(
+        PdfList=pdfs,
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 
 @router.put("/pdfs/{pdf_id}/toggle", response_model=schemas.togglePdfResponseModel)
@@ -81,13 +69,13 @@ def toggle_pdf_completion(
 ):
     pdf = PdfService.mark_pdf_completed(db, pdf_id, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
-    return {
-        "id": pdf.id,
-        "filename": pdf.filename,
-        "completed": pdf.completed,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return schemas.togglePdfResponseModel(
+        id=pdf.id,
+        filename=pdf.filename,
+        completed=pdf.completed,
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 @router.delete("/pdfs/{pdf_id}", status_code=204)
 def delete_pdf(
@@ -105,13 +93,13 @@ def get_progress(
 ):
     total_pdfs,completed_pdfs,progress_percentage = PdfService.get_progress(db, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
-    return {
-        "total_pdfs": total_pdfs,
-        "completed_pdfs": completed_pdfs,
-        "progress_percentage": progress_percentage,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }  
+    return schemas.ProgressResponseModel(
+        total_pdfs=total_pdfs,
+        completed_pdfs=completed_pdfs,
+        progress_percentage=progress_percentage,
+        access_token=access_token,
+        token_type="bearer"
+    ) 
 
 
 @router.get("/completed_pdfs_in_particular_day/{completed_at}", response_model=schemas.CompletedPdfsInParticularDayResponseModel)
@@ -122,9 +110,9 @@ def get_completed_pdfs_in_particular_day(
 ):
     number_of_completed_pdfs = PdfService.get_completed_pdfs_in_particular_day(db, current_user.id, completed_at)
     access_token = auth.create_access_token(data={"sub": current_user.username})
-    return {
-        "NumberofCompletedPdfs": number_of_completed_pdfs,
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return schemas.CompletedPdfsInParticularDayResponseModel(
+        NumberofCompletedPdfs=number_of_completed_pdfs,
+        access_token=access_token,
+        token_type="bearer"
+    )
        
