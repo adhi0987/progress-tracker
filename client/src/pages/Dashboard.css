@@ -7,15 +7,29 @@
 .dashboard-content {
   padding: 2rem;
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 320px 1fr; /* Fixed sidebar, fluid content */
   gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.section-timer {
-  background: #1a1a1a;
+/* Card Styling for Sections */
+.section-timer, .section-progress, .section-pdf {
+  background: var(--bg-surface);
   padding: 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
   height: fit-content;
+}
+
+.section-timer h2, .section-progress h3, .section-pdf h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
 }
 
 .section-main {
@@ -24,8 +38,15 @@
   gap: 2rem;
 }
 
-.section-progress, .section-pdf {
-  background: #1a1a1a;
-  padding: 1.5rem;
-  border-radius: 12px;
+/* Mobile Responsiveness */
+@media (max-width: 900px) {
+  .dashboard-content {
+    grid-template-columns: 1fr; /* Stack into single column */
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+  
+  .section-timer {
+    order: -1; /* Keep timer at top on mobile if desired, or remove to follow HTML order */
+  }
 }

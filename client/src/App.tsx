@@ -17,7 +17,8 @@ function App() {
             path="/dashboard" 
             element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
           />
-          <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+          {/* CHANGED: Always redirect to /login by default to satisfy Requirement 3 */}
+          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>
     </Router>

@@ -3,14 +3,21 @@ import { FileText, Upload, CheckSquare, Square, Eye, Trash } from 'lucide-react'
 import api from '../api';
 import './PDFManager.css';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8000';
+// const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://127.0.0.1:8000';
+const BASE_URL = 'http://127.0.0.1:8000';
 interface PDFFile {
     id: number;
     filename: string;
     completed: boolean;
 }
 
-export default function PDFManager() {
+// Define the Props interface
+interface PDFManagerProps {
+    onDataChange: () => void;
+}
+
+// Accept props in the component
+export default function PDFManager({ onDataChange }: PDFManagerProps) {
     const [pdfs, setPdfs] = useState<PDFFile[]>([]);
     const [uploading, setUploading] = useState(false);
 
@@ -38,6 +45,7 @@ export default function PDFManager() {
             const response = await api.post('/upload_pdf', formData);
             localStorage.setItem('token', response.data.access_token);
             fetchPdfs();
+            onDataChange(); // TRIGGER UPDATE
         } catch (err) {
             console.error("Upload failed");
         } finally {
@@ -50,13 +58,14 @@ export default function PDFManager() {
             const response = await api.put(`/pdfs/${id}/toggle`);
             localStorage.setItem('token', response.data.access_token);  
             fetchPdfs();
+            onDataChange(); // TRIGGER UPDATE
         } catch (err) {
             console.error("Failed to update status");
         }
     };
 
     const viewPdf = (filename: string) => {
-        const pdf_url =BASE_URL + `/uploads/${filename}`; 
+        const pdf_url = BASE_URL + `/uploads/${filename}`; 
         window.open(pdf_url, '_blank');
     };
 
@@ -64,6 +73,7 @@ export default function PDFManager() {
         try {
             await api.delete(`/pdfs/${id}`);
             fetchPdfs();
+            onDataChange(); // TRIGGER UPDATE
         } catch (err) {
             console.error("Failed to delete PDF");
         }
@@ -71,6 +81,7 @@ export default function PDFManager() {
     
     return (
         <div className="pdf-manager">
+            {/* The render code remains the same as your original file... */}
             <div className="pdf-header">
                 <h2>Study Materials</h2>
                 <label className="upload-btn">

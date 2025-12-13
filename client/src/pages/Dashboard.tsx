@@ -1,16 +1,24 @@
+import { useState } from 'react'; // Import useState
 import Navbar from '../components/Navbar';
 import ClockTimer from '../components/ClockTimer';
 import PDFManager from '../components/PDFManager';
 import ProgressStats from '../components/ProgressStats';
 import './Dashboard.css';
-import{ useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  // State to trigger refreshes in sibling components
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
-    // window.location.href = '/login';
     navigate('/login');
+  };
+
+  // Function to increment trigger, causing ProgressStats to re-fetch
+  const handleDataChange = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -23,10 +31,12 @@ export default function Dashboard() {
         </div>
         <div className="section-main">
           <div className="section-progress">
-             <ProgressStats />
+             {/* Pass the trigger state to ProgressStats */}
+             <ProgressStats refreshTrigger={refreshTrigger} />
           </div>
           <div className="section-pdf">
-            <PDFManager />
+            {/* Pass the handler to PDFManager */}
+            <PDFManager onDataChange={handleDataChange} />
           </div>
         </div>
       </div>

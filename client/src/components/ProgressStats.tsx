@@ -3,7 +3,12 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import api from '../api';
 import './ProgressStats.css';
 
-export default function ProgressStats() {
+// Define Props Interface
+interface ProgressStatsProps {
+    refreshTrigger: number;
+}
+
+export default function ProgressStats({ refreshTrigger }: ProgressStatsProps) {
     const [stats, setStats] = useState<any[]>([]);
     const [overall, setOverall] = useState(0);
     const [totalPdfs, setTotalPdfs] = useState(0);
@@ -14,8 +19,6 @@ export default function ProgressStats() {
             try {
                 // 1. Fetch Overall Stats
                 const res = await api.get('/progress');
-                // Note: The backend rotates tokens, so saving it is fine, 
-                // but ensure this doesn't cause race conditions in other components.
                 localStorage.setItem('token', res.data.access_token);
                 
                 setOverall(res.data.progress_percentage);    
@@ -24,8 +27,6 @@ export default function ProgressStats() {
                 
                 // 2. Prepare dates for the last 7 days
                 const datePromises = [];
-                // Loop to generate dates (e.g., T-7 to T-1)
-                // If you want to include "Today", start i at 0.
                 for(let i = 6; i >= 0; i--) {
                     const dataObj = new Date();
                     dataObj.setDate(dataObj.getDate() - i);
@@ -35,7 +36,6 @@ export default function ProgressStats() {
                     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     const dayName = dayNames[dayIndex];
 
-                    // Create a promise for each request
                     datePromises.push(
                         api.get(`/completed_pdfs_in_particular_day/${dateString}`)
                            .then(response => ({
@@ -49,10 +49,7 @@ export default function ProgressStats() {
                     );
                 }
 
-                // 3. Run all requests in parallel
                 const results = await Promise.all(datePromises);
-                
-                // 4. Update state (No .reverse() needed if we want Oldest -> Newest)
                 setStats(results);
 
             } catch(e) { 
@@ -61,8 +58,8 @@ export default function ProgressStats() {
         };
 
         fetchStats();
-        // dependency array is empty to run only once on mount
-    }, []); 
+    // Add refreshTrigger to dependency array to re-run on change
+    }, [refreshTrigger]); 
 
     return (
         <div className="progress-stats">
