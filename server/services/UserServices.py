@@ -1,17 +1,15 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException,status, UploadFile
-import os
-import shutil
-from datetime import datetime
-
+from fastapi import HTTPException,status
 import server.models.models as models
-import server.schemas.schemas as schemas
+# import server.schemas.schemas as schemas
+import server.schemas.signupRequestModel as SignupRequestModel
+import server.schemas.loginRequestModel as LoginRequestModel
 import  server.auth.auth  as auth 
 
 
 class UserService:
     @staticmethod
-    def create_user(db:Session, user:schemas.SignupRequestModel):
+    def create_user(db:Session, user:SignupRequestModel):
         #check if user already exists
         db_user = db.query(models.User).filter(models.User.username == user.username).first()
         if db_user:
@@ -28,7 +26,7 @@ class UserService:
         db.refresh(new_user)
         return new_user
     @staticmethod
-    def authenticate_user(db:Session,user:schemas.LoginRequestModel):
+    def authenticate_user(db:Session,user:LoginRequestModel):
         db_user = db.query(models.User).filter(models.User.username == user.username).first()
         if not db_user or not auth.verify_password(user.password, db_user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
