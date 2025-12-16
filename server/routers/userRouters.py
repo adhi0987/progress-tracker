@@ -16,7 +16,7 @@ from server.schemas.loginRequestModel import LoginRequestModel
 from server.schemas.loginResponseModel import LoginResponseModel
 from server.schemas.signupRequestModel import SignupRequestModel
 from server.schemas.signupResponseModel import SignupResponseModel
-
+from server.auth.permitConfig import permit 
 #create Router
 router = APIRouter()
 
@@ -45,6 +45,13 @@ async def upload_pdf(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    
+    permitted = await permit.check(current_user.username, "create", "pdf_document")
+    if not permitted:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to upload PDF")
+    
+
+
     new_pdf = PdfService.save_pdf(db, file, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
     return uploadPdfResponseModel(
@@ -59,6 +66,11 @@ async def upload_pdf(
 @router.get("/pdfs", response_model=pdfResponseModel)
 def get_pdfs(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     # return db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id).all()
+
+    permitted =  permit.check(current_user.username,"read","pdf_document")
+    if not permitted:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view PDFs")
+    
     pdfs = PdfService.get_all_pdfs(db, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
     return pdfResponseModel(
@@ -74,6 +86,16 @@ def toggle_pdf_completion(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    
+    permitted =     permit.check(
+        user = current_user.username,
+        action = "update",
+        resource = "pdf_document"
+    )
+    if not permitted:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update PDF status")
+    
+
     pdf = PdfService.mark_pdf_completed(db, pdf_id, current_user.id)
     access_token = auth.create_access_token(data={"sub": current_user.username})
     return togglePdfResponseModel(
@@ -90,6 +112,13 @@ def delete_pdf(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ): 
+    permitted =  permit.check(
+        user = current_user.username,
+        action = "delete",
+        resource = "pdf_document"
+    )
+    if not permitted:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete PDF")
     PdfService.delete_pdf(db, pdf_id, current_user.id)    
     return
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Upload, CheckSquare, Square, Eye, Trash } from 'lucide-react';
 import api from '../api';
 import './PDFManager.css';
+import { toast, ToastContainer } from 'react-toastify';
 
 // const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://127.0.0.1:8000';
 const BASE_URL = 'http://127.0.0.1:8000';
@@ -31,7 +32,8 @@ export default function PDFManager({ onDataChange }: PDFManagerProps) {
             localStorage.setItem('token', res.data.access_token);
             setPdfs(res.data.PdfList);
         } catch (err) {
-            console.error(err);
+            // console.error(err);
+            toast.error("Failed to fetch PDFs");
         }
     };
 
@@ -46,8 +48,10 @@ export default function PDFManager({ onDataChange }: PDFManagerProps) {
             localStorage.setItem('token', response.data.access_token);
             fetchPdfs();
             onDataChange(); // TRIGGER UPDATE
+            toast.success("Upload successful");
         } catch (err) {
-            console.error("Upload failed");
+            // console.error("Upload failed");
+            toast.error("Upload failed");
         } finally {
             setUploading(false);
         }
@@ -59,12 +63,15 @@ export default function PDFManager({ onDataChange }: PDFManagerProps) {
             localStorage.setItem('token', response.data.access_token);  
             fetchPdfs();
             onDataChange(); // TRIGGER UPDATE
+            toast.success("Status updated");
         } catch (err) {
-            console.error("Failed to update status");
+            // console.error("Failed to update status");
+            toast.error("Failed to update status");
         }
     };
 
     const viewPdf = (filename: string) => {
+        toast.info("Opening PDF in new tab");
         const pdf_url = BASE_URL + `/uploads/${filename}`; 
         window.open(pdf_url, '_blank');
     };
@@ -73,9 +80,11 @@ export default function PDFManager({ onDataChange }: PDFManagerProps) {
         try {
             await api.delete(`/pdfs/${id}`);
             fetchPdfs();
-            onDataChange(); // TRIGGER UPDATE
+            onDataChange(); 
+            toast.success("PDF deleted");
         } catch (err) {
-            console.error("Failed to delete PDF");
+            // console.error("Failed to delete PDF");
+            toast.error("Failed to delete PDF");
         }
     };
     
@@ -90,7 +99,7 @@ export default function PDFManager({ onDataChange }: PDFManagerProps) {
                     <input type="file" accept="application/pdf" onChange={handleUpload} hidden />
                 </label>
             </div>
-
+            <ToastContainer />
             <div className="pdf-list">
                 {pdfs.length === 0 && <p className="empty-msg">No PDFs uploaded yet.</p>}
                 {pdfs.map(pdf => (

@@ -5,7 +5,7 @@ import server.models.models as models
 import server.schemas.signupRequestModel as SignupRequestModel
 import server.schemas.loginRequestModel as LoginRequestModel
 import  server.auth.auth  as auth 
-
+from server.auth.permitConfig import permit
 
 class UserService:
     @staticmethod
@@ -24,6 +24,18 @@ class UserService:
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
+
+        #sync the user with permit.io
+        
+        try:
+            permit.api.sync_user({
+                "key":user.username,
+                "email":user.email,
+                "name":user.name,
+                "roles":["user"]
+            })
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
         return new_user
     @staticmethod
     def authenticate_user(db:Session,user:LoginRequestModel):

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Play, Pause, RotateCcw, X, BellRing } from 'lucide-react';
 import './ClockTimer.css';
+import { toast, ToastContainer } from "react-toastify";
 
 export default function ClockTimer() {
     const[inputMinutes, setInputMinutes] = useState<number>(0);
@@ -22,6 +23,7 @@ export default function ClockTimer() {
             if(interval !== null) clearInterval(interval);
             setIsActive(false);
             setShowActiveModal(true);
+            // toast.success("Time's up!");
         }
         return () => {
             if(interval !== null) clearInterval(interval);
@@ -50,6 +52,7 @@ export default function ClockTimer() {
         setIsPaused(false);
         setTimeLeft(0);
         setShowActiveModal(false);
+        toast.info("Timer reset");
     }
 
     const formatTime = (seconds :number) : string =>{
@@ -132,6 +135,7 @@ export default function ClockTimer() {
                         <h2>Time's Up!</h2>
                         <button onClick={() => setShowActiveModal(false)}><X size={16} /> Dismiss</button>
                     </div>
+                    <ToastContainer />
                 </div>
             )}
         </div>
