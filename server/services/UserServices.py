@@ -9,7 +9,7 @@ from server.auth.permitConfig import permit
 
 class UserService:
     @staticmethod
-    def create_user(db:Session, user:SignupRequestModel):
+    async def create_user(db:Session, user:SignupRequestModel):
         #check if user already exists
         db_user = db.query(models.User).filter(models.User.username == user.username).first()
         if db_user:
@@ -28,7 +28,7 @@ class UserService:
         #sync the user with permit.io
         
         try:
-            permit.api.sync_user({
+            await permit.api.sync_user({
                 "key":user.username,
                 "email":user.email,
                 "name":user.name,

@@ -22,8 +22,8 @@ router = APIRouter()
 
 
 @router.post("/signup", response_model=SignupResponseModel)
-def signup(user: SignupRequestModel, db: Session = Depends(get_db)):
-    new_user = UserService.create_user(db, user)
+async def signup(user: SignupRequestModel, db: Session = Depends(get_db)):
+    new_user = await UserService.create_user(db, user)
     access_token = auth.create_access_token(data={"sub": new_user.username})
     return SignupResponseModel(
         access_token=access_token,
@@ -64,10 +64,10 @@ async def upload_pdf(
     )
 
 @router.get("/pdfs", response_model=pdfResponseModel)
-def get_pdfs(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_pdfs(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     # return db.query(models.PdfFile).filter(models.PdfFile.user_id == current_user.id).all()
 
-    permitted =  permit.check(current_user.username,"read","pdf_document")
+    permitted =  await permit.check(current_user.username,"read","pdf_document")
     if not permitted:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view PDFs")
     
@@ -81,13 +81,13 @@ def get_pdfs(current_user: models.User = Depends(get_current_user), db: Session 
 
 
 @router.put("/pdfs/{pdf_id}/toggle", response_model=togglePdfResponseModel)
-def toggle_pdf_completion(
+async def toggle_pdf_completion(
     pdf_id: int, 
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     
-    permitted =     permit.check(
+    permitted = await permit.check(
         user = current_user.username,
         action = "update",
         resource = "pdf_document"
@@ -107,12 +107,12 @@ def toggle_pdf_completion(
     )
 
 @router.delete("/pdfs/{pdf_id}", status_code=204)
-def delete_pdf(
+async def delete_pdf(
     pdf_id: int, 
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ): 
-    permitted =  permit.check(
+    permitted =  await permit.check(
         user = current_user.username,
         action = "delete",
         resource = "pdf_document"
@@ -123,7 +123,7 @@ def delete_pdf(
     return
 
 @router.get("/progress", response_model=ProgressResponseModel) 
-def get_progress(
+async def get_progress(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
