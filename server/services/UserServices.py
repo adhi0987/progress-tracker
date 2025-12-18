@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException,status
 import server.models.models as models
 # import server.schemas.schemas as schemas
-import server.schemas.signupRequestModel as SignupRequestModel
-import server.schemas.loginRequestModel as LoginRequestModel
+from  server.schemas.signupRequestModel import SignupRequestModel;
+from server.schemas.loginRequestModel import  LoginRequestModel
 import  server.auth.auth  as auth 
 from server.auth.permitConfig import permit
 
@@ -28,14 +28,35 @@ class UserService:
         #sync the user with permit.io
         
         try:
-            await permit.api.sync_user({
-                "key":user.username,
-                "email":user.email,
-                "name":user.name,
-                "roles":["user"]
-            })
+            await permit.api.users.sync(
+                {
+                    "key":user.username,
+                    "email":user.email,
+                    "first_name":user.name,
+                    "last_name":""
+                }
+            )
         except Exception as e:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
+            print(e)
+            db.delete(new_user)
+            db.commit()
+            print("Error syncing user with permission service, rolling back user creation")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error syncing user with permission service")
+        try:
+            #assign default role to user
+            await permit.api.users.assign_role(
+                {
+                    "user":user.username,
+                    "role":"user",
+                    "tenant":"default"
+                }
+            )
+        except Exception as e:
+            print(e)
+            db.delete(new_user)
+            db.commit()
+            print("Error assigning role to user, rolling back user creation")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error assigning role to user in permission service")
         return new_user
     @staticmethod
     def authenticate_user(db:Session,user:LoginRequestModel):

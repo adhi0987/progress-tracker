@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class LoginResponseModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     access_token: str
     token_type: str
