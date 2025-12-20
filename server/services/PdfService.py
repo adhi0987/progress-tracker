@@ -3,7 +3,8 @@ from fastapi import HTTPException,status, UploadFile
 import os
 import shutil
 from datetime import datetime
-import server.models.models as models
+# models related import
+from server.models import pdfModels as models
 import  server.auth.auth  as auth
 
 

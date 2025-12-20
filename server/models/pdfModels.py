@@ -1,17 +1,7 @@
-from server.database.database import Base
+from server.database import Base
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    email = Column(String, unique=True, index=True)
-    username = Column(String, unique=True, index=True)
-    password_hash = Column(String)
-    
-    pdfs = relationship("PdfFile", back_populates="owner")
 
 class PdfFile(Base):
     __tablename__ = "pdf_files"

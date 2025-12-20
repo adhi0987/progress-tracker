@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException,status
-import server.models.models as models
-# import server.schemas.schemas as schemas
+# models related import 
+from server.models import userModels as models
+
+#schema related import
 from  server.schemas.signupRequestModel import SignupRequestModel;
 from server.schemas.loginRequestModel import  LoginRequestModel
 import  server.auth.auth  as auth 
