@@ -8,4 +8,6 @@ passlib[bcrypt]
 python-multipart
 python-dotenv
 bcrypt==3.2.0
-permit fastapi "uvicorn[standard]"
+permit 
+fastapi
+"uvicorn[standard]"
